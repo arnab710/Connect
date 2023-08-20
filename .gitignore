@@ -1,2 +1,4 @@
+dist
+.gitignore
 node_modules
 .env

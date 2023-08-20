@@ -1,1 +1,5 @@
-console.log(123);
+import express, { Application } from "express";
+
+const app:Application = express();
+
+export default  app;
