@@ -9,7 +9,7 @@ const dbConnection :()=>void = async() =>{
        console.log('DB successfully connected');
        }
        catch(err){
-              console.log('Some error occurred while connection the DB');
+              console.log('Some error occurred while connection the DB' + err);
               process.exit(1);
        }
 }
