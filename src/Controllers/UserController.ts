@@ -51,7 +51,25 @@ const deleteMe = async (req:any,res:Response,next:NextFunction) =>{
               const user = await User.findById(userID).select('+active');
               if(!user) return res.status(400).json({result:'fail',message:"User not found"});
 
+              //setting active false and saving
+              user.active = false;
+              await user.save();
+
+              //deleting the JWT token from cookie
+              res.cookie('jwt', '', {
+                     expires: new Date(Date.now() - 10 * 1000), // Set it in the past to ensure deletion
+                     httpOnly: true,
+              });
+
+              //deleting the cache memory --redis client
+              try{
+                     await client.del(`user:${userID}`);
+              }
+              catch(err){
+                     if(process.env.NODE_ENV==='development') console.error(err);
+              }  
               
+              return res.status(200).json({result:"pass",message:"User deleted successfully"});
        }
        catch(err){
               if(process.env.NODE_ENV==='development') console.error(err);
@@ -59,4 +77,22 @@ const deleteMe = async (req:any,res:Response,next:NextFunction) =>{
        }
 };
 
-export {updateMe,deleteMe};
+const checkcache = async (req:Request,res:Response,next:NextFunction) => {
+       try{
+               const keys = await client.keys('*');
+               let values = keys.map(async (e)=>{
+   
+                   let val:any = await client.get(e);
+                   return JSON.parse(val);
+               })
+   
+               values = await Promise.all(values);
+               res.json({values});
+       }
+       catch(err){
+           if(process.env.NODE_ENV==='development') console.error(err);
+       }
+      // await client.flushDb();
+}
+
+export {updateMe,deleteMe,checkcache};
