@@ -3,180 +3,188 @@ import User from "../Models/UserModel";
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
 import bcrypt from "bcryptjs";
-import {IUser, user} from "../Types/UserTypes";
-import { CheckPasswordChangedTime, CookieSetter, VerifyToken } from "../Utils/ControllerHelper";
+import { IUser } from "../Types/UserTypes";
+import { CheckPasswordChangedTime, CookieSetter, CreatePasswordResetToken, EmailSender, VerifyToken } from "../Utils/ControllerHelper";
 import { client } from "../RedisConnection";
+import { JwtPayload } from "../Types/jwtTypes";
+import crypto from "crypto";
+import { catchAsync } from "../Utils/catchAsync";
+import customError from "../Utils/customError";
 
-const register = async (req:Request,res:Response,next:NextFunction)=>{
+const register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
 
-       try{
+	const { firstName, lastName, email, password, confirmPassword, city, country, bio, occupation } = req.body;
+	if (password !== confirmPassword) return next(new customError(403, "Password And Confirm Password Are Not Same"));
 
-              if(req.cookies?.jwt) return res.status(403).json({result:"fail",message:"You are already logged in"})
+	//creating and saving new mongoose instance
+	let newUser: IUser & Document = new User({ firstName, lastName, email, password, city, country, bio, occupation });
+	await newUser.save();
 
-              const {firstName,lastName,email,password,confirmPassword,profilePicture,coverPicture} = req.body;
-              if(password!==confirmPassword) return res.status(403).json({result:'fail',message:"Password and confirm password are not same"});
-              
-              //creating and saving new mongoose instance
-              let newUser:(IUser & Document) = new User({firstName,lastName,email,password,profilePicture,coverPicture});
-              await newUser.save();
+	//token generation
+	const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET as string, {
+		expiresIn: process.env.JWT_EXPIRE as string,
+	});
 
-              //token generation
-              const token = jwt.sign({id:newUser._id},(process.env.JWT_SECRET as string),{
-                     expiresIn: (process.env.JWT_EXPIRE as string)
-              });
+	//deleting sensitive data
+	const DeletedData: string[] = ["__v", "password", "role", "passwordChangedAt", "passwordResetToken", "passwordResetExpires", "active"];
+	DeletedData.forEach((val: string) => ((newUser as any)[val] = undefined));
 
-              //deleting sensitive data
-              const DeletedData:string[] =  ['__v', 'password', 'role','passwordChangedAt','passwordResetToken','passwordResetExpires','active','createdAt','updatedAt'];
-              DeletedData.forEach((val:string) => (newUser as any)[val] = undefined);
-              
-              //setting jwt cookie 
-              CookieSetter(token,res);
+	//setting jwt cookie
+	CookieSetter(token, res);
 
-              return res.status(201).json({result:'pass',message:'User created successfully',newUser,jwtToken:token});
+	return res.status(201).json({ result: "pass", message: "User Created Successfully", newUser, jwtToken: token });
+});
 
-       }catch(err){
-              console.error(err);
-              return res.status(500).json({result:"fail",message:"Some error occurred"});              
-       }
-}
+const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
 
-const login = async (req:Request,res:Response,next:NextFunction)=>{
+	const { email, password } = req.body;
+	if (!email || !password) return next(new customError(400, "Please Provide Required Details"));
 
-       try{
+	let user: any = await User.findOne({ email }).select("+password +active");
+	if (!user) return next(new customError(401, "Incorrect Email Or Password"));
 
-              if(req.cookies?.jwt) return res.status(403).json({result:"fail",message:"You are already logged in"})
+	//password check
+	const encryptedPassword: string = user.password;
+	const matched = await bcrypt.compare(password, encryptedPassword);
+	if (!matched) return next(new customError(401, "Incorrect Email Or Password"));
 
-              const {email,password} = req.body;
-              if(!email || !password) return res.status(400).json({result:'fail',message:'Please provide required details'});
+	//setting active to true if it was previously false (user previously deleted his account)
+	if (user.active === false) {
+		user.active = true;
+		await user.save({ validateBeforeSave: false });
+	}
 
-              let user:user = await User.findOne({email}).select('+password +active');
-              if(!user) return res.status(401).json({result:'fail',message:'Incorrect email or password'});
+	//token generation
+	const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET as string, {
+		expiresIn: process.env.JWT_EXPIRE as string,
+	});
 
-              //password check
-              const encryptedPassword:string = user.password;
-              const matched = await bcrypt.compare(password,encryptedPassword);
-              if(!matched) return res.status(401).json({result:'fail',message:'Incorrect email or password'});
+	//after the save I can manipulate NewUser to delete sensitive data
+	const DeletedData = ["__v", "password", "role", "passwordChangedAt", "passwordResetToken", "passwordResetExpires", "active"];
+	DeletedData.forEach((val) => ((user as any)[val] = undefined));
 
-              //setting active to true if it was previously false (user previously deleted his account)
-              if(user.active===false){
-                     
-                     user.active = true;
-                     await user.save({validateBeforeSave:false});
-              }
+	//setting jwt cookie
+	CookieSetter(token, res);
 
-              //token generation
-              const token = jwt.sign({id:user._id},(process.env.JWT_SECRET as string),{
-                     expiresIn: (process.env.JWT_EXPIRE as string)
-              });
+	res.status(200).json({ result: "pass", message: "Logged-In Successful", token, user });
+});
 
-              //after the save I can manipulate NewUser to delete sensitive data
-              const DeletedData =  ['__v', 'password', 'role','passwordChangedAt','passwordResetToken','passwordResetExpires','active'];
-              DeletedData.forEach((val) => (user as any)[val] = undefined);
+const authCheck = catchAsync(async (req: any, _res: Response, next: NextFunction) => {
+	//JWT-TOKEN from cookie or request header
+	let token: string = "";
+	if (req.cookies?.jwt) token = req.cookies.jwt;
+	else if (req.headers && req.headers?.authorization && req.headers.authorization?.startsWith("Bearer")) {
+		token = req.headers.authorization.split(" ")[1];
+	}
+	if (token === "") return next(new customError(403, "Please Login"));
 
-              //setting jwt cookie 
-              CookieSetter(token,res);
+	//token verification
+	const user: { id?: string; iat?: number } = { id: "", iat: 0 };
+	const data: JwtPayload | null = await VerifyToken(token);
 
-              res.status(200).json({result:'pass',message:'logged-in successful',token,user});
-       }
-       catch(err){
-              console.error(err);
-              res.status(500).json({result:'fail',message:'Something went wrong'});
-       }
-}
+	user.id = data?.id;
+	user.iat = data?.iat;
 
-const authCheck = async(req:any,res:Response,next:NextFunction) =>{
+	let verifiedUser: any;
+	//trying to retrieve user data from Redis Database --cache hit
+	try {
+		verifiedUser = await client.get(`user:${user.id}`);
+		verifiedUser = JSON.parse(verifiedUser);
+	} catch (err) {
+		if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+	}
 
-       try{
+	//cache miss not found in redis
+	if (!verifiedUser) {
+		//checking it in the DB
+		verifiedUser = await User.findById(user.id).select("+role +passwordChangedAt");
+		if (!verifiedUser) return next(new customError(401, "Some Error Occurred . Please Login Again"));
 
-              //JWT-TOKEN from cookie or request header
-              let token:string = "";
-              if(req.cookies?.jwt) token=req.cookies.jwt;
-              else if(req.headers && req.headers?.authorization && req.headers.authorization?.startsWith('Bearer')){
-                     token = req.headers.authorization.split(" ")[1];
-              }
-              if(token==="") return res.status(403).json({result:"fail",message:"Please login"});
+		//checking if password changed after jwt token issued
+		const CheckPasswordChangedAfterTokenIssued = CheckPasswordChangedTime(verifiedUser.passwordChangedAt, user.iat);
+		if (CheckPasswordChangedAfterTokenIssued) return next(new customError(403, "Password Was Changed"));
 
-              //token verification
-              const user : {id?:string,iat?:number} = {id:"",iat:0};
-              const data:any = await VerifyToken(token);
-                 
-              user.id = data.id;
-              user.iat = data.iat;
+		//setting the client for caching in future
+		try {
+			await client.setEx(`user:${user.id}`, 60 * 60 * 2, JSON.stringify(verifiedUser));
+		} catch (err) {
+			if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+		}
+	}
+	//if cache hit
+	else {
+		//checking if password changed after jwt token issued
+		const CheckPasswordChangedAfterTokenIssued = CheckPasswordChangedTime(verifiedUser.passwordChangedAt, user.iat);
+		if (CheckPasswordChangedAfterTokenIssued) return next(new customError(403, "Password Was Changed"));
+	}
 
-              let verifiedUser:any;
-              //trying to retrieve user data from Redis Database --cache hit
-              try{
-                     verifiedUser = await client.get(`user:${user.id}`);
-                     verifiedUser = JSON.parse(verifiedUser);
-              }
-              catch(err){
-                     if(process.env.NODE_ENV==='development') console.error(`Redis connection problem ${err}`);
-              }
+	//setting verified user as user in the request object
+	req.user = verifiedUser;
+	//Calling next protected route
+	next();
+});
 
-              //cache miss not found in redis
-              if(!verifiedUser){
+const logout = catchAsync(async (req: any, res: Response, _next: NextFunction) => {
+	// set cookie
+	res.cookie("jwt", "", {
+		expires: new Date(Date.now() - 10 * 1000), // Set it in the past to ensure deletion
+		httpOnly: true,
+	});
 
-                     //checking it in the DB
-                     verifiedUser = await User.findById(user.id).select('+role +passwordChangedAt');
-                     if(!verifiedUser) return res.status(401).json({result:'fail',message:'Some error occurred . Please login again'});
+	//deleting from redis client
+	try {
+		const user: any = req.user;
+		await client.del(`user:${user._id}`);
+	} catch (err) {
+		if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+	}
 
-                     //checking if password changed after jwt token issued
-                     const CheckPasswordChangedAfterTokenIssued = CheckPasswordChangedTime(verifiedUser.passwordChangedAt,user.iat); 
-                     if(CheckPasswordChangedAfterTokenIssued) return res.status(403).json({result:'fail',message:'Password was changed'});
+	res.status(200).json({ result: "pass", message: "Logout Successful" });
+});
 
+const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	const { email } = req.body;
+	const user = await User.findOne({ email }).select("_id");
+	if (!user) return next(new customError(400, "This Email is Not Registered"));
 
-                     //setting the client for caching in future
-                     try{
-                            await client.setEx(`user:${user.id}`,60*60*2,JSON.stringify(verifiedUser));
-                     }
-                     catch(err){
-                            if(process.env.NODE_ENV==='development') console.error(`Redis connection problem ${err}`);
-                     }
-              }
-              //if cache hit
-              else{
-                     //checking if password changed after jwt token issued
-                     const CheckPasswordChangedAfterTokenIssued = CheckPasswordChangedTime(verifiedUser.passwordChangedAt,user.iat); 
-                     if(CheckPasswordChangedAfterTokenIssued) return res.status(403).json({result:'fail',message:'Password was changed'});
-              }
+	const resetToken = CreatePasswordResetToken(user);
 
-              //setting verified user as user in the request object
-              req.user = verifiedUser;
-              
-              //Calling next protected route
-              next();
-       }
-       catch(err){
-              console.error(err);
-              return res.status(500).json({result:"fail",message:"Some error occurred, Please login again"});  
-       }
-}
+	//modifying passwordResetToken and passwordResetToken and saving
+	await user.save();
 
-const logout = async (req:any,res:Response,next:NextFunction) =>{
+	const url = `${process.env.FRONTEND_ORIGIN}/Reset-Password/${resetToken}`;
 
-       try{   
-              // set cookie
-              res.cookie('jwt', '', {
-                     expires: new Date(Date.now() - 10 * 1000), // Set it in the past to ensure deletion
-                     httpOnly: true,
-              });
+	//sending emails
+	await EmailSender(email, url);
 
-              try{
-                     //deleting from redis client
-                     const user:user = req.user;
-                     await client.del(`user:${user._id}`);
-              }
-              catch(err){
-                     if(process.env.NODE_ENV==='development') console.error(`Redis connection problem ${err}`);
-              }
+	return res.status(200).json({ result: "pass", message: "Reset Email Sent Successfully!" });
+});
 
-              res.status(200).json({result:'pass',message:'Logout successful'});
-       }
-       catch(err){
-              console.log(err);
-              res.status(500).json({result:'fail',message:'Something went wrong'});
-       }
+const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	const { resetToken, newPassword, confirmNewPassword } = req.body;
 
-}
+	if (!newPassword || !confirmNewPassword) return next(new customError(400, "Please Enter Required Details"));
+	if (newPassword !== confirmNewPassword) return next(new customError(403, "Password and Confirm password are Different"));
 
-export {register,login,authCheck,logout};
+	//rehashing the token to compare
+	const hashToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+	const user = await User.findOne({ passwordResetToken: hashToken, passwordResetExpires: { $gte: Date.now() } }).select("+passwordResetToken +passwordResetExpires +password");
+	if (!user) return next(new customError(404, "Invalid Link or Link Expired"));
+
+	//setting new password
+	user.password = newPassword;
+
+	//setting passwordResetToken and passwordTokenExpires undefined
+	user.passwordResetToken = undefined;
+	user.passwordResetExpires = undefined;
+
+	//saving the user
+	await user.save();
+
+	return res.status(200).json({ result: "pass", message: "Password Changed Successfully ,Now Login With Your New Password" });
+});
+
+export { register, login, authCheck, logout, forgotPassword, resetPassword };

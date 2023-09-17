@@ -1,4 +1,7 @@
+import mongoose from "mongoose";
+
 interface IUser {
+       _id?: mongoose.Types.ObjectId;
        firstName:string;
        lastName:string;
        email:string;
@@ -6,17 +9,17 @@ interface IUser {
        role?:'admin'|'user';
        profilePicture?:string;
        coverPicture?:string;
-       followers?:{user:string}[];
-       followings?:{user:string}[];
+       followers:{user: string}[];
+       followings:{user: string}[];
        passwordChangedAt?:any;
        passwordResetToken?:any;
        passwordResetExpires?:any;
-       active?:boolean
+       active?:boolean;
+       city:string;
+       country:string;
+       bio:string;
+       occupation:string;
 }
 
-interface user extends IUser{
-       save(arg0: { validateBeforeSave: boolean; }): unknown;
-       _id:string
-}
 
-export {IUser,user};
+export {IUser};
