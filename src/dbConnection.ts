@@ -5,8 +5,8 @@ const dbString:String = String(process.env.DB_CONNECTION_STRING?.replace("<passw
 const dbConnection :()=>void = async() =>{
 
        try{
-       await mongoose.connect(String(dbString));
-       console.log('DB successfully connected');
+              await mongoose.connect(String(dbString));
+              if(process.env.NODE_ENV==='development') console.log('DB successfully connected');
        }
        catch(err){
               console.log('Some error occurred while connection the DB' + err);
