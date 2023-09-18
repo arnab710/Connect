@@ -6,7 +6,7 @@ import customError from "../Utils/customError";
 import { newRequestType } from "../Types/ReqestTypeWithUser";
 import Like from "../Models/LikeModel";
 import mongoose from "mongoose";
-import IPost, { Ipost2 } from "../Types/PostTypes";
+import { Ipost2 } from "../Types/PostTypes";
 
 export const PostCreate = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const id = req.user?._id;
@@ -66,7 +66,7 @@ export const like = catchAsync(async (req: newRequestType, res: Response, next: 
 
 	const newLike = new Like({ post: postID, user: userID });
 
-	// //Transaction
+	//Transaction
 	const session = await mongoose.startSession();
 	try {
 		session.startTransaction();

@@ -3,6 +3,7 @@ import Comment from "../Models/CommentModel";
 import { catchAsync } from "../Utils/catchAsync";
 import customError from "../Utils/customError";
 import Post from "../Models/PostModel";
+import mongoose from "mongoose";
 
 export const createComment = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const { post, comment } = req.body;
@@ -17,8 +18,20 @@ export const createComment = catchAsync(async (req: any, res: Response, next: Ne
 
 	const newComment = new Comment({ post, comment, user: userID });
 
-	await newComment.save();
-	await postObj.updateOne({ $inc: { comments: 1 } });
+	//transaction
+	const session = await mongoose.startSession();
+	try {
+		session.startTransaction();
+		await newComment.save({ session });
+		await postObj.updateOne({ $inc: { comments: 1 } }, { session });
+		await session.commitTransaction();
+	} catch (err) {
+		await session.abortTransaction();
+		if (process.env.NODE_ENV === "development") console.log(err);
+		return next(new customError(500, "Can't Complete this action"));
+	} finally {
+		session.endSession();
+	}
 
 	return res.status(201).json({ result: "pass", message: "New Comment Created", newComment });
 });
@@ -34,11 +47,25 @@ export const allComments = catchAsync(async (req: Request, res: Response, _next:
 export const deleteComment = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 	const { commentID } = req.params;
 
-	const deletedComment = await Comment.findByIdAndDelete(commentID);
-	if (!deletedComment) return next(new customError(400, "Some Error Occurred While Deleting The Comment"));
+	const deletedComment = await Comment.findById(commentID).select("_id post");
+	if (!deletedComment) return next(new customError(400, "No Comment FOund To Delete"));
 
 	const postID = deletedComment.post;
 
-	await Post.findByIdAndUpdate(postID, { $inc: { comments: -1 } });
-	res.status(200).json({ result: "pass", message: "Comment Deleted Successfully" });
+	//transaction process
+	const session = await mongoose.startSession();
+	try {
+		session.startTransaction();
+		await Post.findByIdAndUpdate(postID, { $inc: { comments: -1 } }, { session });
+		await deletedComment.deleteOne({ session });
+		await session.commitTransaction();
+	} catch (err) {
+		await session.abortTransaction();
+		if (process.env.NODE_ENV === "development") console.log(err);
+		return next(new customError(500, "Can't complete the action"));
+	} finally {
+		session.endSession();
+	}
+
+	return res.status(200).json({ result: "pass", message: "Comment Deleted Successfully" });
 });
