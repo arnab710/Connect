@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { client } from "../RedisConnection";
+import { client, redisClientError } from "../RedisConnection";
 import User from "../Models/UserModel";
 import { catchAsync } from "../Utils/catchAsync";
 import customError from "../Utils/customError";
@@ -52,10 +52,13 @@ const updateMe = catchAsync(async (req: any, res: Response, next: NextFunction) 
 	DeletedData.forEach((val) => (userData[val] = undefined));
 
 	//deleting the cache memory -- important before save
-	try {
-		await client.del(`user:${userData._id}`); //necessary for further AuthCheck
-	} catch (err) {
-		if (process.env.NODE_ENV === "development") console.log(err);
+
+	if (!redisClientError) {
+		try {
+			await client?.del(`user:${userData._id}`); //necessary for further AuthCheck
+		} catch (err) {
+			if (process.env.NODE_ENV === "development") console.log(err);
+		}
 	}
 
 	return res.status(200).json({ result: "pass", message: "Your Details Updated Successfully" });
@@ -78,11 +81,13 @@ const deleteMe = catchAsync(async (req: any, res: Response, next: NextFunction) 
 		httpOnly: true,
 	});
 
-	//deleting the cache memory --redis client
-	try {
-		await client.del(`user:${userID}`);
-	} catch (err) {
-		if (process.env.NODE_ENV === "development") console.error(err);
+	if (!redisClientError) {
+		//deleting the cache memory --redis client
+		try {
+			await client?.del(`user:${userID}`);
+		} catch (err) {
+			if (process.env.NODE_ENV === "development") console.error(err);
+		}
 	}
 
 	return res.status(200).json({ result: "pass", message: "User Deleted Successfully" });

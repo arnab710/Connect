@@ -5,7 +5,7 @@ import { Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import { IUser } from "../Types/UserTypes";
 import { CheckPasswordChangedTime, CookieSetter, CreatePasswordResetToken, EmailSender, VerifyToken } from "../Utils/ControllerHelper";
-import { client } from "../RedisConnection";
+import { client, redisClientError } from "../RedisConnection";
 import { JwtPayload } from "../Types/jwtTypes";
 import crypto from "crypto";
 import { catchAsync } from "../Utils/catchAsync";
@@ -89,11 +89,14 @@ const authCheck = catchAsync(async (req: any, _res: Response, next: NextFunction
 
 	let verifiedUser: any;
 	//trying to retrieve user data from Redis Database --cache hit
-	try {
-		verifiedUser = await client.get(`user:${user.id}`);
-		verifiedUser = JSON.parse(verifiedUser);
-	} catch (err) {
-		if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+	if (!redisClientError) {
+		try {
+			verifiedUser = await client?.get(`user:${user.id}`);
+			console.log(verifiedUser);
+			verifiedUser = JSON.parse(verifiedUser);
+		} catch (err) {
+			if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+		}
 	}
 
 	//cache miss not found in redis
@@ -107,10 +110,12 @@ const authCheck = catchAsync(async (req: any, _res: Response, next: NextFunction
 		if (CheckPasswordChangedAfterTokenIssued) return next(new customError(403, "Password Was Changed"));
 
 		//setting the client for caching in future
-		try {
-			await client.setEx(`user:${user.id}`, 60 * 60 * 2, JSON.stringify(verifiedUser));
-		} catch (err) {
-			if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+		if (!redisClientError) {
+			try {
+				await client?.setEx(`user:${user.id}`, 60 * 60 * 2, JSON.stringify(verifiedUser));
+			} catch (err) {
+				if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+			}
 		}
 	}
 	//if cache hit
@@ -134,11 +139,13 @@ const logout = catchAsync(async (req: any, res: Response, _next: NextFunction) =
 	});
 
 	//deleting from redis client
-	try {
-		const user: any = req.user;
-		await client.del(`user:${user._id}`);
-	} catch (err) {
-		if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+	if (!redisClientError) {
+		try {
+			const user: any = req.user;
+			await client?.del(`user:${user._id}`);
+		} catch (err) {
+			if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
+		}
 	}
 
 	res.status(200).json({ result: "pass", message: "Logout Successful" });
