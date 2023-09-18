@@ -48,7 +48,7 @@ export const deleteComment = catchAsync(async (req: Request, res: Response, next
 	const { commentID } = req.params;
 
 	const deletedComment = await Comment.findById(commentID).select("_id post");
-	if (!deletedComment) return next(new customError(400, "No Comment FOund To Delete"));
+	if (!deletedComment) return next(new customError(400, "No Comment Found To Delete"));
 
 	const postID = deletedComment.post;
 
