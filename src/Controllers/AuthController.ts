@@ -92,7 +92,6 @@ const authCheck = catchAsync(async (req: any, _res: Response, next: NextFunction
 	if (!redisClientError) {
 		try {
 			verifiedUser = await client?.get(`user:${user.id}`);
-			console.log(verifiedUser);
 			verifiedUser = JSON.parse(verifiedUser);
 		} catch (err) {
 			if (process.env.NODE_ENV === "development") console.error(`Redis Connection Problem ${err}`);
