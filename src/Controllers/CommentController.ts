@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
 export const createComment = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const { post, comment } = req.body;
-	const userID = req.user;
+	const userID = req.user._id;
 
 	if (!post) return next(new customError(400, "A Post is Required To Be Commented On"));
 	if (!comment || comment === "") return next(new customError(400, `Comment Body Can't Be Empty`));
