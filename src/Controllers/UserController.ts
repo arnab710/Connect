@@ -104,17 +104,17 @@ const getUserInfo = catchAsync(async (req: Request, res: Response, next: NextFun
 	return res.status(200).json({ result: "pass", userData });
 });
 
-const getUserFollowings = catchAsync(async (req: any, res: Response, next: NextFunction) => {
-	const userID: string = req.user?._id;
+const getUserFollowings = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	const userID: string = req.params?.id;
 	const user = await User.findById(userID).select("followings").populate({ path: "followings.user", select: "firstName lastName occupation profilePicture" });
 	if (!user) return next(new customError(404, "User not found"));
 
 	return res.status(200).json({ result: "pass", followings: user?.followings });
 });
 
-const getUserFollowers = catchAsync(async (req: any, res: Response, next: NextFunction) => {
-	const userID: string = req.user?._id;
-	const user = await User.findById(userID).select("followers").populate({ path: "followers.user", select: "firstName lastName occupation" });
+const getUserFollowers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	const userID: string = req.params?.id;
+	const user = await User.findById(userID).select("followers").populate({ path: "followers.user", select: "firstName lastName occupation profilePicture" });
 	if (!user) return next(new customError(404, "User not found"));
 
 	return res.status(200).json({ result: "pass", followers: user?.followers });

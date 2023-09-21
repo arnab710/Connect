@@ -20,8 +20,8 @@ router.route("/My-details").get(authCheck, fetchMyInfo);
 router.route("/updateMyDetails").patch(authCheck, uploadFile, sharpConfig, cloudinaryConfig, updateMe);
 router.route("/deleteMyAccount").delete(authCheck, deleteMe);
 
-router.route("/totalFollowings").get(authCheck, getUserFollowings);
-router.route("/totalFollowers").get(authCheck, getUserFollowers);
+router.route("/totalFollowings/:id").get(authCheck, getUserFollowings);
+router.route("/totalFollowers/:id").get(authCheck, getUserFollowers);
 router.route("/singleUser/:id").get(authCheck, getUserInfo);
 
 router.route("/follow").post(authCheck, follow);
