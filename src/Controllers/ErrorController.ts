@@ -20,7 +20,6 @@ export const globalErrorHandler = (err: wholeErrObj, _req: Request, res: Respons
 	err.message = err.message || "Somethig Went Wrong";
 
 	if (process.env.NODE_ENV === "development") {
-		console.error(err);
 		return res.status(err.statusCode).json({ result: "fail", message: err.message, stack: err.stack, error: err });
 	} else {
 		if (err.name === "CastError") return res.status(400).json({ result: "fail", message: "Invalid Parameters Are Provided" });
@@ -31,6 +30,10 @@ export const globalErrorHandler = (err: wholeErrObj, _req: Request, res: Respons
 		if (err.name === "ValidationError") {
 			const { message } = Object.values(err.errors ?? {})[0] as errorObj;
 			return res.status(400).json({ result: "fail", message });
+		}
+		if (err.name === "MulterError") {
+			if (err.message === "File too large") return res.status(400).json({ result: "fail", message: "Your File Exceeds The Maximum Size of 7 MB. Please Upload a Smaller File." });
+			return res.status(400).json({ result: "fail", message: "Something Went Wrong While Uploading Your File" });
 		}
 		//for the error which we already handled beautifully in next() fxn
 		if (err.isAlreadyHandled) return res.status(err.statusCode).json({ result: "fail", message: err.message });

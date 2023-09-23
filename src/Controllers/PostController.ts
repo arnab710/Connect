@@ -11,19 +11,19 @@ import { Ipost2 } from "../Types/PostTypes";
 export const PostCreate = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const id = req.user?._id;
 
-	const { fileType, location, description, file_secure_url } = req.body;
+	const { fileType, description, file_secure_url } = req.body;
 	if (!description && !file_secure_url) return next(new customError(400, "Post Can't Be Empty"));
 
 	//creating mongoose instance based on fileType
 	let newPost;
-	if (fileType === "image-post" && file_secure_url && req.file.mimetype.startsWith("image")) newPost = new Post({ user: id, location, picture: file_secure_url, description });
-	else if (fileType === "video" && file_secure_url && req.file.mimetype.startsWith("video")) newPost = new Post({ user: id, location, video: file_secure_url, description });
-	else if (fileType === "audio" && file_secure_url && req.file.mimetype.startsWith("audio")) newPost = new Post({ user: id, location, audio: file_secure_url, description });
-	else newPost = new Post({ user: id, location, description });
+	if (fileType === "image-post" && file_secure_url && req.file.mimetype.startsWith("image")) newPost = new Post({ user: id, picture: file_secure_url, description });
+	else if (fileType === "video" && file_secure_url && req.file.mimetype.startsWith("video")) newPost = new Post({ user: id, video: file_secure_url, description });
+	else if (fileType === "audio" && file_secure_url && req.file.mimetype.startsWith("audio")) newPost = new Post({ user: id, audio: file_secure_url, description });
+	else newPost = new Post({ user: id, description });
 
 	//saving the DB
 	await newPost.save();
-	res.status(201).json({ result: "pass", message: "Post Created Successfully", newPost });
+	res.status(201).json({ result: "pass", message: "Post Created Successfully" });
 });
 
 export const allPost = catchAsync(async (req: newRequestType, res: Response, _next: NextFunction) => {

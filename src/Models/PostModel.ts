@@ -8,13 +8,9 @@ const PostSchema = new mongoose.Schema<IPost>(
 			ref: "User",
 			required: [true, "Please Provide The User"],
 		},
-		location: {
-			type: String,
-			minlength: [3, "Location Length Must Be Atleast 3"],
-		},
 		description: {
 			type: String,
-			minlength: [2, "Description Length Must Be Atleast 2"],
+			maxlength: [70, "Description Length Must Be Atleast 70"],
 		},
 		picture: String,
 		video: String,
