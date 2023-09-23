@@ -10,7 +10,6 @@ const PostSchema = new mongoose.Schema<IPost>(
 		},
 		description: {
 			type: String,
-			maxlength: [70, "Description Length Must Be Atleast 70"],
 		},
 		picture: String,
 		video: String,
