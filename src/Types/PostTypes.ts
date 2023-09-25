@@ -7,6 +7,7 @@ interface IPost {
 	picture?: string;
 	video?: string;
 	audio?: string;
+	publicID?: string;
 	likes: number;
 	comments: number;
 }

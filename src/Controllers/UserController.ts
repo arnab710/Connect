@@ -4,6 +4,7 @@ import User from "../Models/UserModel";
 import { catchAsync } from "../Utils/catchAsync";
 import customError from "../Utils/customError";
 import { newRequestType } from "../Types/ReqestTypeWithUser";
+import Post from "../Models/PostModel";
 
 //fetching my details
 const fetchMyInfo = catchAsync(async (req: newRequestType, res: Response, _next: NextFunction) => {
@@ -101,7 +102,9 @@ const getUserInfo = catchAsync(async (req: Request, res: Response, next: NextFun
 	//if not found
 	if (!userData) return next(new customError(404, "User Not Found"));
 
-	return res.status(200).json({ result: "pass", userData });
+	const postArray = await Post.find({ user: userID }).select("_id");
+
+	return res.status(200).json({ result: "pass", userData, postNumber: postArray.length });
 });
 
 const getUserFollowings = catchAsync(async (req: Request, res: Response, next: NextFunction) => {

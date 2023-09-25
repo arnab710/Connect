@@ -1,3 +1,4 @@
+import cloudinary from "cloudinary";
 import { NextFunction, Request, Response } from "express";
 import Post from "../Models/PostModel";
 import APIFeatures from "../Utils/APIFeature";
@@ -11,14 +12,14 @@ import { Ipost2 } from "../Types/PostTypes";
 export const PostCreate = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const id = req.user?._id;
 
-	const { fileType, description, file_secure_url } = req.body;
-	if (!description && !file_secure_url) return next(new customError(400, "Post Can't Be Empty"));
+	const { fileType, description, file_secure_url, file_public_id } = req.body;
+	if (!description && (!file_secure_url || !file_public_id)) return next(new customError(400, "Post Can't Be Empty"));
 
 	//creating mongoose instance based on fileType
 	let newPost;
-	if (fileType === "image-post" && file_secure_url && req.file.mimetype.startsWith("image")) newPost = new Post({ user: id, picture: file_secure_url, description });
-	else if (fileType === "video" && file_secure_url && req.file.mimetype.startsWith("video")) newPost = new Post({ user: id, video: file_secure_url, description });
-	else if (fileType === "audio" && file_secure_url && req.file.mimetype.startsWith("audio")) newPost = new Post({ user: id, audio: file_secure_url, description });
+	if (fileType === "image-post" && file_secure_url && req.file.mimetype.startsWith("image")) newPost = new Post({ user: id, picture: file_secure_url, publicID: file_public_id, description });
+	else if (fileType === "video" && file_secure_url && req.file.mimetype.startsWith("video")) newPost = new Post({ user: id, video: file_secure_url, publicID: file_public_id, description });
+	else if (fileType === "audio" && file_secure_url && req.file.mimetype.startsWith("audio")) newPost = new Post({ user: id, audio: file_secure_url, publicID: file_public_id, description });
 	else newPost = new Post({ user: id, description });
 
 	//saving the DB
@@ -45,12 +46,25 @@ export const allPost = catchAsync(async (req: newRequestType, res: Response, _ne
 	return res.status(200).json({ result: "pass", UpdatedPosts });
 });
 
-export const userPost = catchAsync(async (req: Request, res: Response, _next: NextFunction) => {
+export const userPost = catchAsync(async (req: newRequestType, res: Response, _next: NextFunction) => {
 	const userID = req.params?.id;
-	const postQuery = new APIFeatures(Post.find({ user: userID }), req.query).Filtering().Sorting().Paging().Query;
+	const myID = req.user._id;
 
+	const postQuery = new APIFeatures(Post.find({ user: userID }).populate({ path: "user", select: "firstName lastName occupation profilePicture" }), req.query).Filtering().Sorting().Paging().Query;
 	const posts = await postQuery;
-	return res.status(200).json({ result: "pass", posts });
+
+	//all the posts that user likes
+	const userLikedPosts = await Like.find({ user: myID }).select("post -_id");
+	const likedPostIds = userLikedPosts.map((like) => like.post.toString());
+
+	// Modify the Posts array
+	const UpdatedPosts = posts.map((post: Ipost2) => {
+		let postObject = post.toObject();
+		postObject.alreadyLiked = likedPostIds.includes(post._id.toString());
+		return postObject;
+	});
+
+	return res.status(200).json({ result: "pass", UpdatedPosts });
 });
 
 export const like = catchAsync(async (req: newRequestType, res: Response, next: NextFunction) => {
@@ -115,8 +129,18 @@ export const deletePost = catchAsync(async (req: Request, res: Response, next: N
 	const postID: string = req.params?.id;
 
 	//finding post and delete
-	const post = await Post.findByIdAndDelete(postID);
+	const post = await Post.findById(postID).select("publicID picture video audio");
 	if (!post) return next(new customError(404, "Post Not Found"));
+
+	await post.deleteOne();
+
+	try {
+		if (post.picture) await cloudinary.v2.uploader.destroy(String(post.publicID), { resource_type: "image" });
+		else if (post.video || post.audio) await cloudinary.v2.uploader.destroy(String(post.publicID), { resource_type: "video" });
+		if (process.env.NODE_ENV === "development") console.log("Cloudinary Asset deleted successfully");
+	} catch (err) {
+		if (process.env.NODE_ENV === "development") console.log(err);
+	}
 
 	return res.status(200).json({ result: "pass", message: "Post Deleted Successfully" });
 });

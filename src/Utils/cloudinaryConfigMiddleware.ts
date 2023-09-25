@@ -31,6 +31,7 @@ export const cloudinaryConfig = async (req: Request, res: Response, next: NextFu
 
 		//attaching secure file url with the body
 		req.body.file_secure_url = result.secure_url;
+		req.body.file_public_id = result.public_id;
 
 		next();
 	} catch (err: any) {

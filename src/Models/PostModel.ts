@@ -14,6 +14,7 @@ const PostSchema = new mongoose.Schema<IPost>(
 		picture: String,
 		video: String,
 		audio: String,
+		publicID: String,
 		likes: {
 			type: Number,
 			default: 0,
