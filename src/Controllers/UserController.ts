@@ -62,7 +62,7 @@ const updateMe = catchAsync(async (req: any, res: Response, next: NextFunction) 
 		}
 	}
 
-	return res.status(200).json({ result: "pass", message: "Your Details Updated Successfully" });
+	return res.status(200).json({ result: "pass", message: "Your Details Updated Successfully", imgFileLink: file_secure_url });
 });
 
 const deleteMe = catchAsync(async (req: any, res: Response, next: NextFunction) => {
