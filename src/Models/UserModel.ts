@@ -100,7 +100,7 @@ const UserSchema: Schema = new mongoose.Schema<IUser>(
 			type: String,
 			required: [true, "Please provide your bio"],
 			minlength: [5, "Bio Must Be Atleast 5 Characters Long"],
-			maxlength: [100, "Bio Must Be Atmost 100 Characters Long"],
+			maxlength: [300, "Bio Must Be Atmost 300 Characters Long"],
 		},
 		occupation: {
 			type: String,

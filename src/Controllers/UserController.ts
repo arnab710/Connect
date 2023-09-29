@@ -29,7 +29,7 @@ const findUser = catchAsync(async (req: Request, res: Response, _next: NextFunct
 const updateMe = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const userID = req.user?._id;
 
-	const { firstName, lastName, fileType, bio, occupation, file_secure_url } = req.body;
+	const { firstName, lastName, fileType, bio, occupation, country, city, file_secure_url } = req.body;
 
 	//fetching my details from db
 	const userData: any = await User.findById(userID).select("firstName lastName profilePicture coverPicture");
@@ -40,6 +40,8 @@ const updateMe = catchAsync(async (req: any, res: Response, next: NextFunction) 
 	if (lastName && lastName !== userData.lastName) userData.lastName = lastName;
 	if (bio) userData.bio = bio;
 	if (occupation) userData.occupation = occupation;
+	if (country) userData.country = country;
+	if (city) userData.city = city;
 
 	//updating profile picture or cover photo
 	if (fileType === "profile-picture" && file_secure_url && req.file?.mimetype.startsWith("image")) userData.profilePicture = file_secure_url;
