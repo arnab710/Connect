@@ -151,7 +151,9 @@ const logout = catchAsync(async (req: any, res: Response, _next: NextFunction) =
 });
 
 const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
 	const { email } = req.body;
+	if (!email) return next(new customError(400, "No Email Provided"));
 	const user = await User.findOne({ email }).select("_id");
 	if (!user) return next(new customError(400, "This Email is Not Registered"));
 
@@ -178,7 +180,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response, next: NextF
 	const hashToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
 	const user = await User.findOne({ passwordResetToken: hashToken, passwordResetExpires: { $gte: Date.now() } }).select("+passwordResetToken +passwordResetExpires +password");
-	if (!user) return next(new customError(404, "Invalid Link or Link Expired"));
+	if (!user) return next(new customError(404, "Invalid Link or Link Expired ,Please Try Again !"));
 
 	//setting new password
 	user.password = newPassword;
@@ -190,7 +192,7 @@ const resetPassword = catchAsync(async (req: Request, res: Response, next: NextF
 	//saving the user
 	await user.save();
 
-	return res.status(200).json({ result: "pass", message: "Password Changed Successfully ,Now Login With Your New Password" });
+	return res.status(200).json({ result: "pass", message: "Password Changed Successfully" });
 });
 
 export { register, login, authCheck, logout, forgotPassword, resetPassword };
