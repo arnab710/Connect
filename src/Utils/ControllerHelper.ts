@@ -10,7 +10,7 @@ const CookieSetter = (token: string, res: Response) => {
 		expires: new Date(Date.now() + Number(process.env.JWT_COOKIE_EXPIRE) * 24 * 60 * 60 * 1000),
 		httpOnly: true,
 		sameSite: "none",
-		secure: true,
+		secure: false,
 	});
 };
 
