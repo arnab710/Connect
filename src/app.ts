@@ -11,10 +11,12 @@ const API: string = String(process.env.API);
 
 app.use(
 	cors({
-		origin: process.env.FRONTEND_ORIGIN,
+		origin: "*",
 		credentials: true,
 	})
 );
+
+app.options("*", cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(SecurityMiddlewareRouter);
