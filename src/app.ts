@@ -22,6 +22,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(SecurityMiddlewareRouter);
 
+app.get("/", (req, res) => res.send("hello"));
+
 //application routes
 app.use(`/${API}/users`, UserRouter);
 app.use(`/${API}/posts`, PostRouter);
