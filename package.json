@@ -20,6 +20,7 @@
 		"@types/multer": "^1.4.7",
 		"@types/node": "^20.5.1",
 		"@types/sanitize-html": "^2.9.0",
+		"@types/streamifier": "^0.1.0",
 		"@types/validator": "^13.11.1",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.2.2"
@@ -40,6 +41,7 @@
 		"redis": "^4.6.8",
 		"sanitize-html": "^2.11.0",
 		"sharp": "^0.32.5",
+		"streamifier": "^0.1.1",
 		"validator": "^13.11.0"
 	}
 }

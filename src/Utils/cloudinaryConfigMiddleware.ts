@@ -1,7 +1,18 @@
 import cloudinary from "cloudinary";
 import { NextFunction, Request, Response } from "express";
-import deletingAssetFile from "./HandlingassetFile";
-import path from "path";
+import streamifier from "streamifier";
+import customError from "./customError";
+
+const uploadToCloudinary = (transformation: cloudinary.UploadApiOptions, buffer: Buffer): Promise<cloudinary.UploadApiResponse | undefined> => {
+	return new Promise((resolve, reject) => {
+		let cld_upload_stream = cloudinary.v2.uploader.upload_stream(transformation, (error, result) => {
+			if (error) reject(error);
+			else resolve(result);
+		});
+
+		streamifier.createReadStream(buffer).pipe(cld_upload_stream);
+	});
+};
 
 export const cloudinaryConfig = async (req: Request, res: Response, next: NextFunction) => {
 	if (!req.file) return next();
@@ -9,41 +20,25 @@ export const cloudinaryConfig = async (req: Request, res: Response, next: NextFu
 		const buffer = req.file.buffer;
 		const fileType = req.body?.fileType;
 
-		let transformation;
+		let transformation: cloudinary.UploadApiOptions | undefined;
 		if (req.file.mimetype.startsWith("image") && fileType === "profile-picture") {
 			transformation = { width: 500, height: 500, crop: "fill" };
 		} else if (req.file.mimetype.startsWith("image") && fileType === "cover-photo") {
 			transformation = { width: 820, height: 312, crop: "fill" };
 		} else if (req.file.mimetype.startsWith("image") && fileType === "image-post") {
-			transformation = { width: 700, height: 800, crop: "fill" };
+			transformation = { width: 1080, height: 1350, crop: "fill" };
 		} else if (req.file.mimetype.startsWith("video") && fileType === "video") {
-			transformation = { width: 600, height: 750, crop: "fill", eager: [{ width: 600, height: 750, crop: "fill" }], resource_type: "video", chunk_size: 2000000, eager_async: true };
+			transformation = { width: 600, height: 750, crop: "fill", resource_type: "video", chunk_size: 2000000 };
 		} else if (req.file.mimetype.startsWith("audio") && fileType === "audio") {
 			transformation = { transformation: [{ audio_frequency: 8000 }, { audio_codec: "mp3" }], resource_type: "video", chunk_size: 1000000 };
 		}
 
-		let result: any;
-		const normalized_path = path.normalize(req.file.path).replace(/\\/g, "/");
 		//uploading to cloudinary
-		if (req.file.mimetype.startsWith("video") && req.body?.fileType === "video") {
-			result = await cloudinary.v2.uploader.upload(normalized_path, {
-				resource_type: "video",
-				chunk_size: 2000000,
-				eager: [{ width: 600, height: 750, crop: "fill" }],
-				eager_async: true,
-			});
-		} else if (req.file.mimetype.startsWith("audio") && req.body?.fileType === "audio") {
-			result = await cloudinary.v2.uploader.upload(normalized_path, {
-				resource_type: "video",
-				transformation: [{ audio_frequency: 8000 }, { audio_codec: "mp3" }],
-				chunk_size: 1000000,
-			});
-		} else {
-			result = await cloudinary.v2.uploader.upload(req.file.path);
-		}
+		if (!transformation) return next(new customError(400, "No File Type Provided"));
 
-		//deleting the existing file in the server
-		await deletingAssetFile(normalized_path);
+		let result: cloudinary.UploadApiResponse | undefined = await uploadToCloudinary(transformation, buffer);
+
+		if (!result) return next(new customError(500, "File Upload failed"));
 
 		//attaching secure file url with the body
 		req.body.file_secure_url = result.secure_url;

@@ -17,7 +17,7 @@ router.route("/reset-password").patch(resetPassword);
 router.route("/findUser").get(authCheck, findUser);
 
 router.route("/My-details").get(authCheck, fetchMyInfo);
-router.route("/updateMyDetails").patch(authCheck, uploadFile, sharpConfig, cloudinaryConfig, updateMe);
+router.route("/updateMyDetails").patch(authCheck, uploadFile, cloudinaryConfig, updateMe);
 router.route("/deleteMyAccount").delete(authCheck, deleteMe);
 
 router.route("/totalFollowings/:id").get(authCheck, getUserFollowings);
