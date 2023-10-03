@@ -3,7 +3,6 @@ import { authCheck } from "../Controllers/AuthController";
 import { PostCreate, allPost, dislike, like, userPost, deletePost } from "../Controllers/PostController";
 import { allComments, createComment, deleteComment } from "../Controllers/CommentController";
 import { uploadFile } from "../Utils/multerConfig";
-import { sharpConfig } from "../Utils/sharpConfigMiddleware";
 import { cloudinaryConfig } from "../Utils/cloudinaryConfigMiddleware";
 
 const Router = express.Router();

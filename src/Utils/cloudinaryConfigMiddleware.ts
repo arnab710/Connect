@@ -28,7 +28,7 @@ export const cloudinaryConfig = async (req: Request, res: Response, next: NextFu
 		} else if (req.file.mimetype.startsWith("image") && fileType === "image-post") {
 			transformation = { width: 1080, height: 1350, crop: "fill" };
 		} else if (req.file.mimetype.startsWith("video") && fileType === "video") {
-			transformation = { width: 600, height: 750, crop: "fill", resource_type: "video", chunk_size: 2000000 };
+			transformation = { eager: [{ width: 600, height: 750, crop: "fill" }], eager_async: true, resource_type: "video", chunk_size: 2000000 };
 		} else if (req.file.mimetype.startsWith("audio") && fileType === "audio") {
 			transformation = { transformation: [{ audio_frequency: 8000 }, { audio_codec: "mp3" }], resource_type: "video", chunk_size: 1000000 };
 		}

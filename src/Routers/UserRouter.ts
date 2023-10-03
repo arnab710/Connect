@@ -2,7 +2,6 @@ import express, { Router } from "express";
 import { register, login, authCheck, logout, forgotPassword, resetPassword } from "../Controllers/AuthController";
 import { deleteMe, fetchMyInfo, findUser, follow, getUserFollowers, getUserFollowings, getUserInfo, unfollow, updateMe } from "../Controllers/UserController";
 import { uploadFile } from "../Utils/multerConfig";
-import { sharpConfig } from "../Utils/sharpConfigMiddleware";
 import { cloudinaryConfig } from "../Utils/cloudinaryConfigMiddleware";
 
 const router: Router = express.Router();

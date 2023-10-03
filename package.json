@@ -40,7 +40,6 @@
 		"multer": "^1.4.5-lts.1",
 		"redis": "^4.6.8",
 		"sanitize-html": "^2.11.0",
-		"sharp": "^0.32.5",
 		"streamifier": "^0.1.1",
 		"validator": "^13.11.0"
 	}
