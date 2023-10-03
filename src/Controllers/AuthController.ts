@@ -132,7 +132,12 @@ const authCheck = catchAsync(async (req: any, _res: Response, next: NextFunction
 
 const logout = catchAsync(async (req: any, res: Response, _next: NextFunction) => {
 	// set cookie
-	res.clearCookie("jwt");
+	res.cookie("jwt", "", {
+		expires: new Date(Date.now() - 10 * 1000), // Set it in the past to ensure deletion
+		httpOnly: true,
+		sameSite: "none",
+		secure: true,
+	});
 
 	//deleting from redis client
 	if (!redisClientError) {
