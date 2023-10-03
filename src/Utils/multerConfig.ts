@@ -13,7 +13,7 @@ const multerFilter = (_req: Request, file: Express.Multer.File, cb: any) => {
 const upload = multer({
 	storage: multer.memoryStorage(),
 	fileFilter: multerFilter,
-	limits: { fileSize: 7 * 1024 * 1024 },
+	limits: { fileSize: 4 * 1024 * 1024 },
 });
 
 export const uploadFile = upload.single("file");

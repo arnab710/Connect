@@ -21,7 +21,7 @@ const globalErrorHandler = (err, _req, res, _next) => {
         }
         if (err.name === "MulterError") {
             if (err.message === "File too large")
-                return res.status(400).json({ result: "fail", message: "Your File Exceeds The Maximum Size of 7 MB. Please Upload a Smaller File." });
+                return res.status(400).json({ result: "fail", message: "Your File Exceeds The Maximum Size of 4 MB. Please Upload a Smaller File." });
             return res.status(400).json({ result: "fail", message: "Something Went Wrong While Uploading Your File" });
         }
         //for the error which we already handled beautifully in next() fxn
