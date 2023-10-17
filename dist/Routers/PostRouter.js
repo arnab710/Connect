@@ -14,7 +14,8 @@ Router.route("/").get(PostController_1.allPost); //fetching all posts
 Router.route("/singleUser/:id").get(PostController_1.userPost); //fetching single user's post
 Router.route("/like/:postID").post(PostController_1.like); //liking a post
 Router.route("/dislike/:postID").post(PostController_1.dislike); //disliking a post
-Router.route("/new").post(GenerateSignedUpload_1.GenerateSignedUpload); //create a post
+Router.route("/signature").post(GenerateSignedUpload_1.GenerateSignedUpload); //create a post
+Router.route("/new").post(PostController_1.PostCreate);
 Router.route("/delete/:id").delete(PostController_1.deletePost); //deleting a post
 Router.route("/comments/:postID").get(CommentController_1.allComments); //fetching all comment of a post
 Router.route("/comments/new").post(CommentController_1.createComment); //creating a comment

@@ -6,8 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const AuthController_1 = require("../Controllers/AuthController");
 const UserController_1 = require("../Controllers/UserController");
-const multerConfig_1 = require("../Utils/multerConfig");
-const cloudinaryConfigMiddleware_1 = require("../Utils/cloudinaryConfigMiddleware");
 const router = express_1.default.Router();
 //user specific routes
 router.route("/sign-up").post(AuthController_1.register);
@@ -16,7 +14,7 @@ router.route("/forget-password").post(AuthController_1.forgotPassword);
 router.route("/reset-password").patch(AuthController_1.resetPassword);
 router.route("/findUser").get(AuthController_1.authCheck, UserController_1.findUser);
 router.route("/My-details").get(AuthController_1.authCheck, UserController_1.fetchMyInfo);
-router.route("/updateMyDetails").patch(AuthController_1.authCheck, multerConfig_1.uploadFile, cloudinaryConfigMiddleware_1.cloudinaryConfig, UserController_1.updateMe);
+router.route("/updateMyDetails").patch(AuthController_1.authCheck, UserController_1.updateMe);
 router.route("/deleteMyAccount").delete(AuthController_1.authCheck, UserController_1.deleteMe);
 router.route("/totalFollowings/:id").get(AuthController_1.authCheck, UserController_1.getUserFollowings);
 router.route("/totalFollowers/:id").get(AuthController_1.authCheck, UserController_1.getUserFollowers);

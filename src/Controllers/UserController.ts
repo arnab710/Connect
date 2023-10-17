@@ -44,8 +44,8 @@ const updateMe = catchAsync(async (req: any, res: Response, next: NextFunction) 
 	if (city) userData.city = city;
 
 	//updating profile picture or cover photo
-	if (fileType === "profile-picture" && file_secure_url && req.file?.mimetype.startsWith("image")) userData.profilePicture = file_secure_url;
-	else if (fileType === "cover-photo" && file_secure_url && req.file?.mimetype.startsWith("image")) userData.coverPicture = file_secure_url;
+	if (fileType === "profile-picture" && file_secure_url) userData.profilePicture = file_secure_url;
+	else if (fileType === "cover-photo" && file_secure_url) userData.coverPicture = file_secure_url;
 
 	//saving userData to DB
 	await userData.save();

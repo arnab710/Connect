@@ -1,8 +1,6 @@
 import express, { Router } from "express";
 import { register, login, authCheck, logout, forgotPassword, resetPassword } from "../Controllers/AuthController";
 import { deleteMe, fetchMyInfo, findUser, follow, getUserFollowers, getUserFollowings, getUserInfo, unfollow, updateMe } from "../Controllers/UserController";
-import { uploadFile } from "../Utils/multerConfig";
-import { cloudinaryConfig } from "../Utils/cloudinaryConfigMiddleware";
 
 const router: Router = express.Router();
 
@@ -16,7 +14,7 @@ router.route("/reset-password").patch(resetPassword);
 router.route("/findUser").get(authCheck, findUser);
 
 router.route("/My-details").get(authCheck, fetchMyInfo);
-router.route("/updateMyDetails").patch(authCheck, uploadFile, cloudinaryConfig, updateMe);
+router.route("/updateMyDetails").patch(authCheck, updateMe);
 router.route("/deleteMyAccount").delete(authCheck, deleteMe);
 
 router.route("/totalFollowings/:id").get(authCheck, getUserFollowings);

@@ -11,16 +11,16 @@ import { Ipost2 } from "../Types/PostTypes";
 
 export const PostCreate = catchAsync(async (req: any, res: Response, next: NextFunction) => {
 	const id = req.user?._id;
-
-	const { fileType, description, file_secure_url, file_public_id } = req.body;
-	if (!description && (!file_secure_url || !file_public_id)) return next(new customError(400, "Post Can't Be Empty"));
+	const { resource_type, description, file_secure_url, public_id, audio } = req.body;
+	if (!description && (!file_secure_url || !public_id)) return next(new customError(400, "Post Can't Be Empty"));
 
 	//creating mongoose instance based on fileType
 	let newPost;
-	if (fileType === "image-post" && file_secure_url && req.file.mimetype.startsWith("image")) newPost = new Post({ user: id, picture: file_secure_url, publicID: file_public_id, description });
-	else if (fileType === "video" && file_secure_url && req.file.mimetype.startsWith("video")) newPost = new Post({ user: id, video: file_secure_url, publicID: file_public_id, description });
-	else if (fileType === "audio" && file_secure_url && req.file.mimetype.startsWith("audio")) newPost = new Post({ user: id, audio: file_secure_url, publicID: file_public_id, description });
-	else newPost = new Post({ user: id, description });
+	if (resource_type === "image" && file_secure_url) newPost = new Post({ user: id, picture: file_secure_url, publicID: public_id, description });
+	else if (resource_type === "video" && file_secure_url) {
+		if (!audio) newPost = new Post({ user: id, video: file_secure_url, publicID: public_id, description });
+		else newPost = new Post({ user: id, audio: file_secure_url, publicID: public_id, description });
+	} else newPost = new Post({ user: id, description });
 
 	//saving the DB
 	await newPost.save();

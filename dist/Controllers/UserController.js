@@ -37,7 +37,7 @@ const findUser = (0, catchAsync_1.catchAsync)((req, res, _next) => __awaiter(voi
 }));
 exports.findUser = findUser;
 const updateMe = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b, _c, _d;
+    var _b;
     const userID = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
     const { firstName, lastName, fileType, bio, occupation, country, city, file_secure_url } = req.body;
     //fetching my details from db
@@ -58,9 +58,9 @@ const updateMe = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void
     if (city)
         userData.city = city;
     //updating profile picture or cover photo
-    if (fileType === "profile-picture" && file_secure_url && ((_c = req.file) === null || _c === void 0 ? void 0 : _c.mimetype.startsWith("image")))
+    if (fileType === "profile-picture" && file_secure_url)
         userData.profilePicture = file_secure_url;
-    else if (fileType === "cover-photo" && file_secure_url && ((_d = req.file) === null || _d === void 0 ? void 0 : _d.mimetype.startsWith("image")))
+    else if (fileType === "cover-photo" && file_secure_url)
         userData.coverPicture = file_secure_url;
     //saving userData to DB
     yield userData.save();
@@ -81,8 +81,8 @@ const updateMe = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void
 }));
 exports.updateMe = updateMe;
 const deleteMe = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
-    const userID = (_e = req.user) === null || _e === void 0 ? void 0 : _e._id;
+    var _c;
+    const userID = (_c = req.user) === null || _c === void 0 ? void 0 : _c._id;
     //finding the current user
     const user = yield UserModel_1.default.findById(userID).select("+active");
     if (!user)
@@ -109,9 +109,9 @@ const deleteMe = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void
 }));
 exports.deleteMe = deleteMe;
 const getUserInfo = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
+    var _d;
     //finding userID and finding from DB
-    const userID = (_f = req.params) === null || _f === void 0 ? void 0 : _f.id;
+    const userID = (_d = req.params) === null || _d === void 0 ? void 0 : _d.id;
     const userData = yield UserModel_1.default.findById(userID).select("-email -__v -createdAt -updatedAt");
     //if not found
     if (!userData)
@@ -121,8 +121,8 @@ const getUserInfo = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(v
 }));
 exports.getUserInfo = getUserInfo;
 const getUserFollowings = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
-    const userID = (_g = req.params) === null || _g === void 0 ? void 0 : _g.id;
+    var _e;
+    const userID = (_e = req.params) === null || _e === void 0 ? void 0 : _e.id;
     const user = yield UserModel_1.default.findById(userID).select("followings").populate({ path: "followings.user", select: "firstName lastName occupation profilePicture" });
     if (!user)
         return next(new customError_1.default(404, "User not found"));
@@ -130,8 +130,8 @@ const getUserFollowings = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
 }));
 exports.getUserFollowings = getUserFollowings;
 const getUserFollowers = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h;
-    const userID = (_h = req.params) === null || _h === void 0 ? void 0 : _h.id;
+    var _f;
+    const userID = (_f = req.params) === null || _f === void 0 ? void 0 : _f.id;
     const user = yield UserModel_1.default.findById(userID).select("followers").populate({ path: "followers.user", select: "firstName lastName occupation profilePicture" });
     if (!user)
         return next(new customError_1.default(404, "User not found"));
@@ -139,10 +139,10 @@ const getUserFollowers = (0, catchAsync_1.catchAsync)((req, res, next) => __awai
 }));
 exports.getUserFollowers = getUserFollowers;
 const follow = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j, _k, _l, _m;
+    var _g, _h, _j, _k;
     const { id } = req.body;
     //changing its type to mongoose object
-    const myUserID = (_j = req.user) === null || _j === void 0 ? void 0 : _j._id;
+    const myUserID = (_g = req.user) === null || _g === void 0 ? void 0 : _g._id;
     // Check if the user is trying to follow himself
     if (myUserID === id)
         return next(new customError_1.default(400, "You Cannot Follow Yourself"));
@@ -155,22 +155,22 @@ const follow = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0
     if (!followerUser)
         return next(new customError_1.default(404, "User Not Found"));
     // Check if the user is already following the target user
-    if ((_k = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _k === void 0 ? void 0 : _k.some((following) => String(following.user) === id)) {
+    if ((_h = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _h === void 0 ? void 0 : _h.some((following) => String(following.user) === id)) {
         return next(new customError_1.default(400, "Already Following This User"));
     }
     //pushing the new following in the following array and saving
-    (_l = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _l === void 0 ? void 0 : _l.push({ user: id });
+    (_j = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _j === void 0 ? void 0 : _j.push({ user: id });
     yield (myUser === null || myUser === void 0 ? void 0 : myUser.save());
     //pushing the new following in the followers array of the other user and saving
-    (_m = followerUser === null || followerUser === void 0 ? void 0 : followerUser.followers) === null || _m === void 0 ? void 0 : _m.push({ user: myUserID });
+    (_k = followerUser === null || followerUser === void 0 ? void 0 : followerUser.followers) === null || _k === void 0 ? void 0 : _k.push({ user: myUserID });
     yield (followerUser === null || followerUser === void 0 ? void 0 : followerUser.save());
     return res.status(200).json({ result: "pass", message: "Following Successful" });
 }));
 exports.follow = follow;
 const unfollow = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _o, _p, _q, _r;
+    var _l, _m, _o, _p;
     const { id } = req.body;
-    const myUserID = (_o = req.user) === null || _o === void 0 ? void 0 : _o._id;
+    const myUserID = (_l = req.user) === null || _l === void 0 ? void 0 : _l._id;
     // Check if the user is trying to unfollow himself
     if (myUserID === id)
         return next(new customError_1.default(400, "You Cannot Unfollow Yourself"));
@@ -183,15 +183,15 @@ const unfollow = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void
     if (!followerUser)
         return next(new customError_1.default(404, "User Not Found"));
     // Check if the user is not following the target user
-    if (!((_p = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _p === void 0 ? void 0 : _p.some((following) => String(following.user) === id))) {
+    if (!((_m = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _m === void 0 ? void 0 : _m.some((following) => String(following.user) === id))) {
         return next(new customError_1.default(400, "You Are Not Following This User"));
     }
     //removing the target user from following array
-    const newFollowingsArray = (_q = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _q === void 0 ? void 0 : _q.filter((following) => String(following.user) !== id);
+    const newFollowingsArray = (_o = myUser === null || myUser === void 0 ? void 0 : myUser.followings) === null || _o === void 0 ? void 0 : _o.filter((following) => String(following.user) !== id);
     myUser.followings = newFollowingsArray;
     yield myUser.save();
     //removing the current user from the target's user array
-    const newFollowersArray = (_r = followerUser === null || followerUser === void 0 ? void 0 : followerUser.followers) === null || _r === void 0 ? void 0 : _r.filter((follower) => String(follower.user) !== myUserID);
+    const newFollowersArray = (_p = followerUser === null || followerUser === void 0 ? void 0 : followerUser.followers) === null || _p === void 0 ? void 0 : _p.filter((follower) => String(follower.user) !== myUserID);
     followerUser.followers = newFollowersArray;
     yield followerUser.save();
     return res.status(200).json({ result: "pass", message: "Unfollowed Successfully" });
