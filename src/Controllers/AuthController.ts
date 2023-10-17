@@ -12,8 +12,6 @@ import { catchAsync } from "../Utils/catchAsync";
 import customError from "../Utils/customError";
 
 const register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
-
 	const { firstName, lastName, email, password, confirmPassword, city, country, bio, occupation } = req.body;
 	if (password !== confirmPassword) return next(new customError(403, "Password And Confirm Password Are Not Same"));
 
@@ -37,8 +35,6 @@ const register = catchAsync(async (req: Request, res: Response, next: NextFuncti
 });
 
 const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
-
 	const { email, password } = req.body;
 	if (!email || !password) return next(new customError(400, "Please Provide Required Details"));
 
@@ -153,7 +149,6 @@ const logout = catchAsync(async (req: any, res: Response, _next: NextFunction) =
 });
 
 const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-	if (req.cookies?.jwt) return next(new customError(403, "You Are Already Logged In"));
 	const { email } = req.body;
 	if (!email) return next(new customError(400, "No Email Provided"));
 	const user = await User.findOne({ email }).select("_id");

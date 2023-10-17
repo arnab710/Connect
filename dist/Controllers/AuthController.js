@@ -22,9 +22,6 @@ const crypto_1 = __importDefault(require("crypto"));
 const catchAsync_1 = require("../Utils/catchAsync");
 const customError_1 = __importDefault(require("../Utils/customError"));
 const register = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    if ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.jwt)
-        return next(new customError_1.default(403, "You Are Already Logged In"));
     const { firstName, lastName, email, password, confirmPassword, city, country, bio, occupation } = req.body;
     if (password !== confirmPassword)
         return next(new customError_1.default(403, "Password And Confirm Password Are Not Same"));
@@ -44,9 +41,6 @@ const register = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void
 }));
 exports.register = register;
 const login = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    if ((_b = req.cookies) === null || _b === void 0 ? void 0 : _b.jwt)
-        return next(new customError_1.default(403, "You Are Already Logged In"));
     const { email, password } = req.body;
     if (!email || !password)
         return next(new customError_1.default(400, "Please Provide Required Details"));
@@ -76,12 +70,12 @@ const login = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0,
 }));
 exports.login = login;
 const authCheck = (0, catchAsync_1.catchAsync)((req, _res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c, _d, _e;
+    var _a, _b, _c;
     //JWT-TOKEN from cookie or request header
     let token = "";
-    if ((_c = req.cookies) === null || _c === void 0 ? void 0 : _c.jwt)
+    if ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.jwt)
         token = req.cookies.jwt;
-    else if (req.headers && ((_d = req.headers) === null || _d === void 0 ? void 0 : _d.authorization) && ((_e = req.headers.authorization) === null || _e === void 0 ? void 0 : _e.startsWith("Bearer"))) {
+    else if (req.headers && ((_b = req.headers) === null || _b === void 0 ? void 0 : _b.authorization) && ((_c = req.headers.authorization) === null || _c === void 0 ? void 0 : _c.startsWith("Bearer"))) {
         token = req.headers.authorization.split(" ")[1];
     }
     if (token === "")
@@ -160,9 +154,6 @@ const logout = (0, catchAsync_1.catchAsync)((req, res, _next) => __awaiter(void 
 }));
 exports.logout = logout;
 const forgotPassword = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
-    if ((_f = req.cookies) === null || _f === void 0 ? void 0 : _f.jwt)
-        return next(new customError_1.default(403, "You Are Already Logged In"));
     const { email } = req.body;
     if (!email)
         return next(new customError_1.default(400, "No Email Provided"));
